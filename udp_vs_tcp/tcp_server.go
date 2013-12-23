@@ -1,22 +1,26 @@
 package udp_vs_tcp
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"time"
 )
 
 type TCPServer struct {
+	raddr string
+	gen   Generator
 }
 
-func NewTCPServer() Server {
-	return &TCPServer{}
+func NewTCPServer(raddr string, gen Generator) Server {
+	return &TCPServer{raddr, gen}
 }
 
 func (t *TCPServer) Measure() ([]ServerMeasure, error) {
-	raddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:9000")
+	raddr, err := net.ResolveTCPAddr("tcp", t.raddr)
 	if err != nil {
-		return nil, fmt.Errorf("resolving addr, %v", err)
+		return nil, fmt.Errorf("reso.lving addr, %v", err)
 	}
 
 	l, err := net.ListenTCP("tcp", raddr)
@@ -37,11 +41,20 @@ func (t *TCPServer) Measure() ([]ServerMeasure, error) {
 		start := time.Now()
 		n, err := conn.Read(buf)
 		dT := time.Since(start)
-		measures = append(measures, ServerMeasure{dT, n, buf[:n], err})
-		if err != nil {
+		if err != nil && err != io.EOF {
+			measures = append(measures, ServerMeasure{dT, n, buf[:n], err})
 			return measures, fmt.Errorf("reading, %v", err)
 		}
-		fmt.Printf("Read : %v\n", buf[:n])
-	}
+		if !t.gen.ValidateNext(buf[:n]) {
+			err = errors.New("failed to read expected sequence")
+		}
+		measures = append(measures, ServerMeasure{dT, n, buf[:n], err})
 
+		if err == io.EOF && !t.gen.HasNext() {
+			return measures, errors.New("expected next sequence but got EOF")
+		} else if err != io.EOF && t.gen.HasNext() {
+			return measures, errors.New("expected EOF but got nothing")
+		}
+	}
+	return measures, nil
 }
