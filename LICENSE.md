@@ -1,6 +1,6 @@
 # The _You Shall Do No Boring Stuff_ License.
 
-All of this stuff if (C) Antoine Grondin, 2013.
+All of this stuff is (C) Antoine Grondin, 2013.
 
 1. This software or anything that can possibly be derived from it cannot be used to produce boring stuff.
 2. The definition of what is boring is defined by what I, Antoine Grondin, define as boring or not. This definition may change at any point in time (that is, in the past too!) without prior or after notice.
