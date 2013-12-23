@@ -4,9 +4,10 @@ All of this stuff if (C) Antoine Grondin, 2013.
 
 1. This software or anything that can possibly be derived from it cannot be used to produce boring stuff.
 2. The definition of what is boring is defined by what I, Antoine Grondin, define as boring or not. This definition may change at any point in time (that is, in the past too!) without prior or after notice.
-3. For everything that's not boring, the GPLv3 license (bellow) applies.
+3. For everything that's not boring, the GPLv3 license (below) applies.
 4. Use of this software is at your own risk, I provide it as is and with no warranty or anything whatsoever.
 5. You may pay me large sums of money to remove clause 1.
+6. You may pay me even larger sums of money to obtain a different license altogether.
 
 # The GPLv3 License
 
