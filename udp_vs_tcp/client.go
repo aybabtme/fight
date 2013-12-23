@@ -3,6 +3,7 @@ package udp_vs_tcp
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
 

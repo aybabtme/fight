@@ -9,21 +9,21 @@ import (
 )
 
 type TCPServer struct {
-	raddr string
+	laddr string
 	gen   Generator
 }
 
-func NewTCPServer(raddr string, gen Generator) Server {
-	return &TCPServer{raddr, gen}
+func NewTCPServer(laddr string, gen Generator) Server {
+	return &TCPServer{laddr, gen}
 }
 
-func (t *TCPServer) Measure() ([]ServerMeasure, error) {
-	raddr, err := net.ResolveTCPAddr("tcp", t.raddr)
+func (t *TCPServer) Measure(bufferSize int) ([]ServerMeasure, error) {
+	laddr, err := net.ResolveTCPAddr("tcp", t.laddr)
 	if err != nil {
-		return nil, fmt.Errorf("reso.lving addr, %v", err)
+		return nil, fmt.Errorf("resolving addr, %v", err)
 	}
 
-	l, err := net.ListenTCP("tcp", raddr)
+	l, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
 		return nil, fmt.Errorf("listening, %v", err)
 	}
@@ -35,7 +35,7 @@ func (t *TCPServer) Measure() ([]ServerMeasure, error) {
 	}
 	defer conn.Close()
 
-	buf := make([]byte, 1<<14)
+	buf := make([]byte, bufferSize)
 	measures := make([]ServerMeasure, 0)
 	for {
 		start := time.Now()
