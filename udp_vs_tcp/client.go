@@ -3,7 +3,6 @@ package udp_vs_tcp
 import (
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -29,36 +28,42 @@ func NewClient(network string, addr net.Addr, timeout time.Duration, gen Generat
 	}
 }
 
-func (t *Client) Send(size int) (measures []ClientMeasure, closeErr error) {
-	conn, err := net.DialTimeout(t.net, t.dest.String(), t.timeout)
+func (c *Client) Send(size int, kill chan struct{}) (chan *ClientMeasure, error) {
+	conn, err := net.DialTimeout(c.net, c.dest.String(), c.timeout)
 	if err != nil {
 		return nil, fmt.Errorf("dialing, %v", err)
 	}
-	defer func() {
-		err = conn.Close()
-		if err != nil {
-			return
-		}
-		if closeErr != nil {
-			closeErr = fmt.Errorf("%v, prior error : %v", err, closeErr)
-		} else {
-			closeErr = err
-		}
-	}()
 
-	measures = make([]ClientMeasure, size)
+	measures := make(chan *ClientMeasure, size)
 
-	for i := range measures {
-		n, err := conn.Write(t.generator.Next())
-		measures[i] = ClientMeasure{time.Now(), n, err}
+	go func(mChan chan *ClientMeasure) {
+		defer conn.Close()
+		defer close(mChan)
 
-		if err != nil {
-			opErr, ok := err.(*net.OpError)
-			if ok && opErr.Temporary() {
-				continue
+		for c.generator.HasNext() {
+			select {
+			case <-kill:
+				return
+			default:
+				m, err := c.write(conn)
+				mChan <- m
+				if err == nil {
+					continue
+				}
+
+				opErr, ok := err.(*net.OpError)
+				if !ok || !opErr.Temporary() {
+					panic(err)
+				}
 			}
-			return measures[:i+1], err
+
 		}
-	}
-	return
+	}(measures)
+
+	return measures, nil
+}
+
+func (c *Client) write(conn net.Conn) (*ClientMeasure, error) {
+	n, err := conn.Write(c.generator.Next())
+	return ClientMeasure{time.Now(), n, err}, err
 }
