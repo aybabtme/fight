@@ -12,6 +12,7 @@ type Generator interface {
 	Done() uint64
 	Total() uint64
 	Reset()
+	Size() int
 }
 
 type SequenceCounter struct {
@@ -75,4 +76,8 @@ func (s *SequenceCounter) Total() uint64 {
 
 func (s *SequenceCounter) Reset() {
 	s.cur = s.start
+}
+
+func (s *SequenceCounter) Size() int {
+	return len(s.buf)
 }

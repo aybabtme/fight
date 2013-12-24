@@ -13,7 +13,7 @@ type UDPServer struct {
 	gen   Generator
 }
 
-func NewUDPServer(laddr string, gen Generator) Server {
+func NewUDPServer(laddr string, gen *Generator) Server {
 	return &UDPServer{laddr, gen}
 }
 
