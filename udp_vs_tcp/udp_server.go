@@ -17,8 +17,8 @@ func NewUDPServer(laddr string, gen Generator) Server {
 	return &UDPServer{laddr, gen}
 }
 
-func (t *UDPServer) Measure(bufferSize int) ([]ServerMeasure, error) {
-	laddr, err := net.ResolveUDPAddr("udp", t.laddr)
+func (u *UDPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMeasure, error) {
+	laddr, err := net.ResolveUDPAddr("udp", u.laddr)
 	if err != nil {
 		return nil, fmt.Errorf("resolving addr, %v", err)
 	}
@@ -26,26 +26,43 @@ func (t *UDPServer) Measure(bufferSize int) ([]ServerMeasure, error) {
 	if err != nil {
 		return nil, fmt.Errorf("listening, %v", err)
 	}
-	defer conn.Close()
 
-	buf := make([]byte, bufferSize)
-	measures := make([]ServerMeasure, 0)
-	for {
+	measures := make(chan *ServerMeasure)
 
-		n, err := conn.Read(buf)
-		now := time.Now()
+	go func(mChan chan *ServerMeasure) {
+		defer conn.Close()
+		defer close(mChan)
 
-		if err != nil && err != io.EOF {
-			measures = append(measures, ServerMeasure{now, n, buf[:n], err})
-			return measures, fmt.Errorf("reading, %v", err)
+		buf := make([]byte, bufferSize)
+		for {
+			select {
+			case <-kill:
+				return
+			default:
+				m, err := u.read(conn, buf)
+				if err != nil {
+					panic(err)
+				}
+				mChan <- m
+			}
 		}
-		// don't t.gen.ValidateNext(), UDP can arrive out of order
-		// and that's normal/we don't care
-		measures = append(measures, ServerMeasure{now, n, buf[:n], err})
-
-		if err == io.EOF && !t.gen.HasNext() {
-			return measures, errors.New("expected next sequence but got EOF")
-		}
-	}
+	}(measures)
 	return measures, nil
+}
+
+func (u *UDPServer) read(conn *net.UDPConn, buf []byte) (*ServerMeasure, error) {
+	n, err := conn.Read(buf)
+	now := time.Now()
+
+	m := &ServerMeasure{now, n, buf[:n], err}
+
+	if err != nil && err != io.EOF {
+		return m, fmt.Errorf("reading, %v", err)
+	}
+
+	if err == io.EOF && !u.gen.HasNext() {
+		return m, errors.New("expected next sequence but got EOF")
+	}
+
+	return m, nil
 }

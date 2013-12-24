@@ -17,7 +17,7 @@ func NewTCPServer(laddr string, gen Generator) Server {
 	return &TCPServer{laddr, gen}
 }
 
-func (t *TCPServer) Measure(bufferSize int) ([]ServerMeasure, error) {
+func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMeasure, error) {
 	laddr, err := net.ResolveTCPAddr("tcp", t.laddr)
 	if err != nil {
 		return nil, fmt.Errorf("resolving addr, %v", err)
@@ -27,33 +27,58 @@ func (t *TCPServer) Measure(bufferSize int) ([]ServerMeasure, error) {
 	if err != nil {
 		return nil, fmt.Errorf("listening, %v", err)
 	}
-	defer l.Close()
 
 	conn, err := l.AcceptTCP()
 	if err != nil {
 		return nil, fmt.Errorf("accepting, %v", err)
 	}
-	defer conn.Close()
 
-	buf := make([]byte, bufferSize)
-	measures := make([]ServerMeasure, 0)
-	for {
-		n, err := conn.Read(buf)
-		now := time.Now()
-		if err != nil && err != io.EOF {
-			measures = append(measures, ServerMeasure{now, n, buf[:n], err})
-			return measures, fmt.Errorf("reading, %v", err)
-		}
-		if !t.gen.ValidateNext(buf[:n]) {
-			err = errors.New("failed to read expected sequence")
-		}
-		measures = append(measures, ServerMeasure{now, n, buf[:n], err})
+	measures := make(chan *ServerMeasure)
 
-		if err == io.EOF && !t.gen.HasNext() {
-			return measures, errors.New("expected next sequence but got EOF")
-		} else if err != io.EOF && t.gen.HasNext() {
-			return measures, errors.New("expected EOF but got nothing")
+	go func(mChan chan *ServerMeasure) {
+		defer l.Close()
+		defer conn.Close()
+		defer close(mChan)
+
+		buf := make([]byte, bufferSize)
+
+		for {
+			select {
+			case <-kill:
+				return
+			default:
+				m, err := t.read(conn, buf)
+				if err != nil {
+					panic(err)
+				}
+				mChan <- m
+			}
 		}
-	}
+	}(measures)
+
 	return measures, nil
+}
+func (t *TCPServer) read(conn *net.TCPConn, buf []byte) (*ServerMeasure, error) {
+	n, err := conn.Read(buf)
+	now := time.Now()
+
+	m := &ServerMeasure{now, n, buf[:n], err}
+
+	if err != nil && err != io.EOF {
+		return m, fmt.Errorf("reading, %v", err)
+	}
+
+	if !t.gen.ValidateNext(buf[:n]) {
+		return m, errors.New("failed to read expected sequence")
+	}
+
+	if err == io.EOF && !t.gen.HasNext() {
+		return m, errors.New("expected next sequence but got EOF")
+	}
+
+	if err != io.EOF && t.gen.HasNext() {
+		return m, errors.New("expected EOF but got nothing")
+	}
+
+	return m, nil
 }

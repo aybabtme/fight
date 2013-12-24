@@ -12,5 +12,5 @@ type ServerMeasure struct {
 }
 
 type Server interface {
-	Measure(bufferSize int) ([]ServerMeasure, error)
+	Measure(bufferSize int, kill chan struct{}) (chan *ServerMeasure, error)
 }
