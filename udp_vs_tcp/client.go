@@ -8,7 +8,7 @@ import (
 )
 
 type ClientMeasure struct {
-	dT   time.Duration
+	t    time.Time
 	size int
 	err  error
 }
@@ -49,10 +49,8 @@ func (t *Client) Send(size int) (measures []ClientMeasure, closeErr error) {
 	measures = make([]ClientMeasure, size)
 
 	for i := range measures {
-		start := time.Now()
 		n, err := conn.Write(t.generator.Next())
-		dT := time.Since(start)
-		measures[i] = ClientMeasure{dT, n, err}
+		measures[i] = ClientMeasure{time.Now(), n, err}
 
 		if err != nil {
 			opErr, ok := err.(*net.OpError)

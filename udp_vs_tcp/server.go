@@ -5,7 +5,7 @@ import (
 )
 
 type ServerMeasure struct {
-	dT   time.Duration
+	t    time.Time
 	size int
 	msg  []byte
 	err  error
