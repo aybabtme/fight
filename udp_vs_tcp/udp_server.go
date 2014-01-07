@@ -14,7 +14,7 @@ type UDPServer struct {
 }
 
 func NewUDPServer(laddr string, gen *Generator) Server {
-	return &UDPServer{laddr, gen}
+	return &UDPServer{laddr, *gen}
 }
 
 func (u *UDPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMeasure, error) {

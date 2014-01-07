@@ -1,13 +1,10 @@
 package udp_vs_tcp
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"path"
 	"time"
 )
 
@@ -50,38 +47,27 @@ func (c *ControlSrv) Start() error {
 func (c *ControlSrv) Close() error {
 	defer c.l.Close()
 	c.k <- struct{}{}
-	resp, err := http.Get(path.Join(c.raddr, "/kill"))
-	if err != nil {
-		return fmt.Errorf("sending kill message to other, %v", err)
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading response to kill request, %v", err)
-	}
-
-	want := []byte("ok\n")
-	if !bytes.Equal(data, want) {
-		return fmt.Errorf("want '%s' but was '%s'", want, data)
-	}
 	return nil
 }
 
 func (c *ControlSrv) ping(rw http.ResponseWriter, req *http.Request) {
+	log.Printf("Control: Received ping")
 	_, err := fmt.Fprintln(rw, "pong")
 	if err != nil {
-		log.Fatalf("Responding to `/ping`, %v", err)
+		log.Fatalf("Control: Responding to `/ping`, %v", err)
 	}
 }
 
 func (c *ControlSrv) kill(rw http.ResponseWriter, req *http.Request) {
+	log.Printf("Control: Received kill")
 	_, err := fmt.Fprintln(rw, "ok")
 	if err != nil {
-		log.Fatalf("Responding to `/kill`, %v", err)
+		log.Fatalf("Control: Responding to `/kill`, %v", err)
 	}
+	log.Printf("Control: Sent `ok`, closing")
 
 	if err := c.Close(); err != nil {
-		log.Fatalf("Closing down after `/kill`, %v", err)
+		log.Fatalf("Control: Closing down after `/kill`, %v", err)
 	}
+	log.Printf("Control: Closed")
 }

@@ -4,17 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"time"
 )
 
 type TCPServer struct {
-	laddr string
-	gen   Generator
+	laddr   string
+	gen     Generator
+	timeout time.Duration
 }
 
-func NewTCPServer(laddr string, gen Generator) Server {
-	return &TCPServer{laddr, gen}
+func NewTCPServer(laddr string, timeout time.Duration, gen Generator) Server {
+	return &TCPServer{laddr, gen, timeout}
 }
 
 func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMeasure, error) {
@@ -35,6 +37,17 @@ func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 
 	measures := make(chan *ServerMeasure)
 
+	// Read routine
+	go func() {
+		<-kill
+		log.Printf("Server received kill request")
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("Closing connection, %v", err)
+		}
+	}()
+
+	// Read routine
 	go func(mChan chan *ServerMeasure) {
 		defer l.Close()
 		defer conn.Close()
@@ -43,22 +56,23 @@ func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 		buf := make([]byte, bufferSize)
 
 		for {
-			select {
-			case <-kill:
-				return
-			default:
-				m, err := t.read(conn, buf)
-				if err != nil {
-					panic(err)
-				}
-				mChan <- m
+			m, err := t.read(conn, buf)
+			if err != nil {
+				panic(err)
 			}
+			mChan <- m
 		}
 	}(measures)
 
 	return measures, nil
 }
 func (t *TCPServer) read(conn *net.TCPConn, buf []byte) (*ServerMeasure, error) {
+
+	err := conn.SetDeadline(time.Now().Add(t.timeout))
+	if err != nil {
+		return nil, fmt.Errorf("setting deadline for next read, %v", err)
+	}
+
 	n, err := conn.Read(buf)
 	now := time.Now()
 
@@ -76,7 +90,7 @@ func (t *TCPServer) read(conn *net.TCPConn, buf []byte) (*ServerMeasure, error) 
 		return m, errors.New("expected next sequence but got EOF")
 	}
 
-	if err != io.EOF && t.gen.HasNext() {
+	if err != nil && err != io.EOF && t.gen.HasNext() {
 		return m, errors.New("expected EOF but got nothing")
 	}
 
