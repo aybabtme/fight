@@ -4,17 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"time"
 )
 
 type UDPServer struct {
-	laddr string
-	gen   Generator
+	laddr   string
+	gen     Generator
+	timeout time.Duration
 }
 
-func NewUDPServer(laddr string, gen *Generator) Server {
-	return &UDPServer{laddr, *gen}
+func NewUDPServer(laddr string, timeout time.Duration, gen Generator) Server {
+	return &UDPServer{laddr, gen, timeout}
 }
 
 func (u *UDPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMeasure, error) {
@@ -27,30 +29,40 @@ func (u *UDPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 		return nil, fmt.Errorf("listening, %v", err)
 	}
 
-	measures := make(chan *ServerMeasure)
+	// Kill routine
+	go func() {
+		<-kill
+		log.Printf("Server received kill request")
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("Closing connection, %v", err)
+		}
+	}()
 
+	// Read routine
+	measures := make(chan *ServerMeasure)
 	go func(mChan chan *ServerMeasure) {
 		defer conn.Close()
 		defer close(mChan)
 
 		buf := make([]byte, bufferSize)
 		for {
-			select {
-			case <-kill:
-				return
-			default:
-				m, err := u.read(conn, buf)
-				if err != nil {
-					panic(err)
-				}
-				mChan <- m
+			m, err := u.read(conn, buf)
+			if err != nil {
+				panic(err)
 			}
+			mChan <- m
 		}
 	}(measures)
 	return measures, nil
 }
 
 func (u *UDPServer) read(conn *net.UDPConn, buf []byte) (*ServerMeasure, error) {
+	err := conn.SetDeadline(time.Now().Add(u.timeout))
+	if err != nil {
+		return nil, fmt.Errorf("setting deadline for next read, %v", err)
+	}
+
 	n, err := conn.Read(buf)
 	now := time.Now()
 

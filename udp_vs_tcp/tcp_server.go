@@ -35,9 +35,7 @@ func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 		return nil, fmt.Errorf("accepting, %v", err)
 	}
 
-	measures := make(chan *ServerMeasure)
-
-	// Read routine
+	// Kill routine
 	go func() {
 		<-kill
 		log.Printf("Server received kill request")
@@ -48,6 +46,7 @@ func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 	}()
 
 	// Read routine
+	measures := make(chan *ServerMeasure)
 	go func(mChan chan *ServerMeasure) {
 		defer l.Close()
 		defer conn.Close()
