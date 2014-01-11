@@ -54,8 +54,10 @@ func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 
 		buf := make([]byte, bufferSize)
 
+		var last time.Time
 		for {
-			m, err := t.read(conn, buf)
+			last = time.Now()
+			m, err := t.read(conn, buf, last)
 			if err != nil {
 				panic(err)
 			}
@@ -65,7 +67,8 @@ func (t *TCPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 
 	return measures, nil
 }
-func (t *TCPServer) read(conn *net.TCPConn, buf []byte) (*ServerMeasure, error) {
+
+func (t *TCPServer) read(conn *net.TCPConn, buf []byte, last time.Time) (*ServerMeasure, error) {
 
 	err := conn.SetDeadline(time.Now().Add(t.timeout))
 	if err != nil {
@@ -75,7 +78,7 @@ func (t *TCPServer) read(conn *net.TCPConn, buf []byte) (*ServerMeasure, error) 
 	n, err := conn.Read(buf)
 	now := time.Now()
 
-	m := &ServerMeasure{now, n, buf[:n], err}
+	m := &ServerMeasure{now, now.Sub(last), n, buf[:n], err}
 
 	if err != nil && err != io.EOF {
 		return m, fmt.Errorf("reading, %v", err)

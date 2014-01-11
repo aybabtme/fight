@@ -46,8 +46,10 @@ func (u *UDPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 		defer close(mChan)
 
 		buf := make([]byte, bufferSize)
+		var last time.Time
 		for {
-			m, err := u.read(conn, buf)
+			last = time.Now()
+			m, err := u.read(conn, buf, last)
 			if err != nil {
 				panic(err)
 			}
@@ -57,7 +59,7 @@ func (u *UDPServer) Measure(bufferSize int, kill chan struct{}) (chan *ServerMea
 	return measures, nil
 }
 
-func (u *UDPServer) read(conn *net.UDPConn, buf []byte) (*ServerMeasure, error) {
+func (u *UDPServer) read(conn *net.UDPConn, buf []byte, last time.Time) (*ServerMeasure, error) {
 	err := conn.SetDeadline(time.Now().Add(u.timeout))
 	if err != nil {
 		return nil, fmt.Errorf("setting deadline for next read, %v", err)
@@ -66,7 +68,7 @@ func (u *UDPServer) read(conn *net.UDPConn, buf []byte) (*ServerMeasure, error) 
 	n, err := conn.Read(buf)
 	now := time.Now()
 
-	m := &ServerMeasure{now, n, buf[:n], err}
+	m := &ServerMeasure{now, now.Sub(last), n, buf[:n], err}
 
 	if err != nil && err != io.EOF {
 		return m, fmt.Errorf("reading, %v", err)

@@ -11,6 +11,7 @@ import (
 
 type ClientMeasure struct {
 	t    time.Time
+	dT   time.Duration
 	size int
 	err  error
 }
@@ -45,6 +46,7 @@ func (c *Client) Send(kill chan struct{}) (chan *ClientMeasure, error) {
 		defer conn.Close()
 		defer close(mChan)
 
+		var last time.Time
 		for c.generator.HasNext() {
 			select {
 			case <-kill:
@@ -52,7 +54,8 @@ func (c *Client) Send(kill chan struct{}) (chan *ClientMeasure, error) {
 				return
 			default:
 				fmt.Printf("%d/%d\r", c.generator.Done(), c.generator.Total())
-				m, err := c.write(conn)
+				last = time.Now()
+				m, err := c.write(conn, last)
 				mChan <- m
 				if err == nil {
 					continue
@@ -79,7 +82,8 @@ func (c *Client) Send(kill chan struct{}) (chan *ClientMeasure, error) {
 	return measures, nil
 }
 
-func (c *Client) write(conn net.Conn) (*ClientMeasure, error) {
+func (c *Client) write(conn net.Conn, last time.Time) (*ClientMeasure, error) {
 	n, err := conn.Write(c.generator.Next())
-	return &ClientMeasure{time.Now(), n, err}, err
+	now := time.Now()
+	return &ClientMeasure{now, now.Sub(last), n, err}, err
 }

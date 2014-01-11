@@ -34,6 +34,7 @@ func MeasureTCPServer(lstnAddr, ctrlAddr, rmtAddr string, timeout time.Duration,
 	log.Printf("Collecting measurements")
 	csvW.Write([]string{
 		"Time",
+		"dT",
 		"MessageSize",
 		"Message",
 		"Error",
@@ -45,6 +46,7 @@ func MeasureTCPServer(lstnAddr, ctrlAddr, rmtAddr string, timeout time.Duration,
 		}
 		csvW.Write([]string{
 			measure.t.String(),
+			strconv.FormatInt(measure.dT.Nanoseconds(), 10),
 			strconv.Itoa(measure.size),
 			string(measure.msg),
 			errStr,
@@ -78,6 +80,7 @@ func MeasureUDPServer(lstnAddr, ctrlAddr, rmtAddr string, timeout time.Duration,
 	log.Printf("Collecting measurements")
 	csvW.Write([]string{
 		"Time",
+		"dT",
 		"MessageSize",
 		"Message",
 		"Error",
@@ -89,6 +92,7 @@ func MeasureUDPServer(lstnAddr, ctrlAddr, rmtAddr string, timeout time.Duration,
 		}
 		csvW.Write([]string{
 			measure.t.String(),
+			strconv.FormatInt(measure.dT.Nanoseconds(), 10),
 			strconv.Itoa(measure.size),
 			string(measure.msg),
 			errStr,
@@ -117,6 +121,7 @@ func MeasureTCPClient(rmtAddr, rmtCtrlAddr string, timeout time.Duration, gen Ge
 	log.Printf("Collecting measurements")
 	csvW.Write([]string{
 		"Time",
+		"dT",
 		"MessageSize",
 		"Error",
 	})
@@ -127,6 +132,7 @@ func MeasureTCPClient(rmtAddr, rmtCtrlAddr string, timeout time.Duration, gen Ge
 		}
 		csvW.Write([]string{
 			measure.t.String(),
+			strconv.FormatInt(measure.dT.Nanoseconds(), 10),
 			strconv.Itoa(measure.size),
 			errStr,
 		})
@@ -155,6 +161,7 @@ func MeasureUDPClient(rmtAddr, rmtCtrlAddr string, timeout time.Duration, gen Ge
 	log.Printf("Collecting measurements")
 	csvW.Write([]string{
 		"Time",
+		"dT",
 		"MessageSize",
 		"Error",
 	})
@@ -165,6 +172,7 @@ func MeasureUDPClient(rmtAddr, rmtCtrlAddr string, timeout time.Duration, gen Ge
 		}
 		csvW.Write([]string{
 			measure.t.String(),
+			strconv.FormatInt(measure.dT.Nanoseconds(), 10),
 			strconv.Itoa(measure.size),
 			errStr,
 		})

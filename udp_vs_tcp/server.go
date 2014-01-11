@@ -10,6 +10,7 @@ import (
 
 type ServerMeasure struct {
 	t    time.Time
+	dT   time.Duration
 	size int
 	msg  []byte
 	err  error
