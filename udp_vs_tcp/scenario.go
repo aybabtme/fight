@@ -32,6 +32,12 @@ func MeasureTCPServer(lstnAddr, ctrlAddr, rmtAddr string, timeout time.Duration,
 	}
 
 	log.Printf("Collecting measurements")
+	csvW.Write([]string{
+		"Time",
+		"MessageSize",
+		"Message",
+		"Error",
+	})
 	for measure := range measures {
 		var errStr string
 		if measure.err != nil {
@@ -70,6 +76,12 @@ func MeasureUDPServer(lstnAddr, ctrlAddr, rmtAddr string, timeout time.Duration,
 	}
 
 	log.Printf("Collecting measurements")
+	csvW.Write([]string{
+		"Time",
+		"MessageSize",
+		"Message",
+		"Error",
+	})
 	for measure := range measures {
 		var errStr string
 		if measure.err != nil {
@@ -103,6 +115,11 @@ func MeasureTCPClient(rmtAddr, rmtCtrlAddr string, timeout time.Duration, gen Ge
 	}
 
 	log.Printf("Collecting measurements")
+	csvW.Write([]string{
+		"Time",
+		"MessageSize",
+		"Error",
+	})
 	for measure := range measures {
 		var errStr string
 		if measure.err != nil {
@@ -136,6 +153,11 @@ func MeasureUDPClient(rmtAddr, rmtCtrlAddr string, timeout time.Duration, gen Ge
 	}
 
 	log.Printf("Collecting measurements")
+	csvW.Write([]string{
+		"Time",
+		"MessageSize",
+		"Error",
+	})
 	for measure := range measures {
 		var errStr string
 		if measure.err != nil {
