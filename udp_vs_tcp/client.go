@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-var sleepBeforeKill time.Duration = time.Second * 5
-
 type ClientMeasure struct {
 	t    time.Time
 	dT   time.Duration
@@ -73,15 +71,7 @@ func (c *Client) Send(kill chan struct{}) (chan *ClientMeasure, error) {
 
 		log.Printf("Done sending, %d/%d", c.generator.Done(), c.generator.Total())
 
-		log.Printf("Sleeping for %v before sending kill", sleepBeforeKill)
-		time.Sleep(sleepBeforeKill)
-
-		rmtCtrl := "http://" + path.Join(c.rmtCtrlAddr, "/kill")
-		log.Printf("Done sending, GET %v", rmtCtrl)
-		_, err := http.Get(rmtCtrl)
-		if err != nil {
-			log.Fatalf("Sending GET /kill to server, %v", err)
-		}
+		c.killServer()
 	}(measures)
 
 	return measures, nil
@@ -91,4 +81,17 @@ func (c *Client) write(conn net.Conn, last time.Time) (*ClientMeasure, error) {
 	n, err := conn.Write(c.generator.Next())
 	now := time.Now()
 	return &ClientMeasure{now, now.Sub(last), n, err}, err
+}
+
+func (c *Client) killServer() {
+	sleepBeforeKill := time.Second * 5
+	log.Printf("Sleeping for %v before sending kill", sleepBeforeKill)
+	time.Sleep(sleepBeforeKill)
+
+	rmtCtrl := "http://" + path.Join(c.rmtCtrlAddr, "/kill")
+	log.Printf("Done sending, GET %v", rmtCtrl)
+	_, err := http.Get(rmtCtrl)
+	if err != nil {
+		log.Fatalf("Sending GET /kill to server, %v", err)
+	}
 }
