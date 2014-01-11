@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var sleepBeforeKill time.Duration = time.Second * 5
+
 type ClientMeasure struct {
 	t    time.Time
 	dT   time.Duration
@@ -70,6 +72,9 @@ func (c *Client) Send(kill chan struct{}) (chan *ClientMeasure, error) {
 		}
 
 		log.Printf("Done sending, %d/%d", c.generator.Done(), c.generator.Total())
+
+		log.Printf("Sleeping for %v before sending kill", sleepBeforeKill)
+		time.Sleep(sleepBeforeKill)
 
 		rmtCtrl := "http://" + path.Join(c.rmtCtrlAddr, "/kill")
 		log.Printf("Done sending, GET %v", rmtCtrl)
