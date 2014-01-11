@@ -13,8 +13,8 @@ import (
 
 type Specification struct {
 	LocalAddr  string `json:"localAddress"`
-	RemoteAddr string `json:"remoteAddress"`
 	LocalCtrl  string `json:"localControlAddress"`
+	RemoteAddr string `json:"remoteAddress"`
 	RemoteCtrl string `json:"remoteControlAddress"`
 	Role       string `json:"localRole"`
 	TimeOut    int    `json:"timeout"`
@@ -45,14 +45,14 @@ func ParseSpec() Specification {
 
 func WriteSpec() Specification {
 	spec := Specification{
-		LocalAddr:  "127.0.0.1:6060",
+		LocalAddr:  ":6060",
 		RemoteAddr: "127.0.0.1:6060",
-		LocalCtrl:  "127.0.0.1:8080",
+		LocalCtrl:  ":8080",
 		RemoteCtrl: "127.0.0.1:8080",
 		Role:       "tcp_server",
 		TimeOut:    15000,
 		ByteSize:   8,
-		CountTo:    10000,
+		CountTo:    100000,
 	}
 
 	data, err := json.MarshalIndent(&spec, "", "   ")
