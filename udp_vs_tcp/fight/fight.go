@@ -93,7 +93,7 @@ func measureTCPServer() {
 	countTo := uint64(spec.CountTo)
 
 	filename := fmt.Sprintf("server_tcp_%s.csv",
-		time.Now().Format("2006_01_02_15:04:05"))
+		time.Now().Format("2006_01_02_15_04_05"))
 
 	f, err := os.Create(filename)
 	if err != nil {
@@ -116,7 +116,7 @@ func measureTCPClient() {
 	countTo := uint64(spec.CountTo)
 
 	filename := fmt.Sprintf("client_tcp_%s.csv",
-		time.Now().Format("2006_01_02_15:04:05"))
+		time.Now().Format("2006_01_02_15_04_05"))
 
 	f, err := os.Create(filename)
 	if err != nil {
@@ -140,7 +140,7 @@ func measureUDPServer() {
 	countTo := uint64(spec.CountTo)
 
 	filename := fmt.Sprintf("server_udp_%s.csv",
-		time.Now().Format("2006_01_02_15:04:05"))
+		time.Now().Format("2006_01_02_15_04_05"))
 
 	f, err := os.Create(filename)
 	if err != nil {
@@ -163,7 +163,7 @@ func measureUDPClient() {
 	countTo := uint64(spec.CountTo)
 
 	filename := fmt.Sprintf("client_udp_%s.csv",
-		time.Now().Format("2006_01_02_15:04:05"))
+		time.Now().Format("2006_01_02_15_04_05"))
 
 	f, err := os.Create(filename)
 	if err != nil {
